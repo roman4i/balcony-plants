@@ -23,8 +23,8 @@ struct dataHolder {
   String value;
 };
 
-dataHolder switcher = {1, "false"};
-dataHolder slider = {2, "0"};
+// just as example
+dataHolder switcher = {5, "false"};
 
 void notFound(AsyncWebServerRequest *request){
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
@@ -100,11 +100,6 @@ void setup() {
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/update/slider", [](AsyncWebServerRequest *request, JsonVariant &json) {
     StaticJsonDocument<100> data;
     char* response;
-    Serial.println("Have request to update");
-    int args = request->args();
-    for(int i=0;i<args;i++){
-      Serial.printf("ARG[%s]: %s\n", request->argName(i).c_str(), request->arg(i).c_str());
-    }
     if (json.is<JsonArray>())
     {
       data = json.as<JsonArray>();
@@ -116,7 +111,6 @@ void setup() {
     DeserializationError error = deserializeJson(data, response);
     const char* id = data["id"];
     const char* value = data["value"];
-    Serial.println(value);
     request->send(200, "application/json", response);
   });
 
@@ -128,7 +122,6 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 }
 
 String getTemperature() {
@@ -145,6 +138,7 @@ String getAnalogSensor(byte pin) {
   return String(analogRead(pin));
 }
 
+// create JSON element
 String addStringLine(String value, byte id, String symbol, String type, String name, bool last) {
   String lastComma = ", ";
   if (last) lastComma = " ";
