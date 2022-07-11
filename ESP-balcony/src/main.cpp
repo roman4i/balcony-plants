@@ -23,8 +23,8 @@ struct dataHolder {
   String value;
 };
 
-dataHolder switcher = {1, "false"};
-dataHolder slider = {2, "0"};
+// just as example
+dataHolder switcher = {5, "false"};
 
 void notFound(AsyncWebServerRequest *request){
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
@@ -67,32 +67,39 @@ void setup() {
   });
 
   server.on("/getAllData", HTTP_GET, [](AsyncWebServerRequest *request){
-    // String forFirst = "{\"id\": \"3\", \"type\": \"sensor\", \"name\": \"Temperature\", \"value\": \"" + getTemperature() +"C\"}, ";
-    // String forSecond = "{\"id\": \"4\", \"type\": \"sensor\", \"name\": \"Humidity\", \"value\": \"" + getHumidity() +"C\"}, ";
-    // String fake = "{\"id\": \"2\", \"type\": \"slider\", \"name\": \"Humidity\", \"value\": \"30\"}";
     String toSend = "[ " + addStringLine(getTemperature(), 3, "C", "sensor", "Temperature", false);
     toSend += addStringLine(getHumidity(), 4, "%", "sensor", "Air Humidity", false);
     toSend += addStringLine(getAnalogSensor(32), 1, " points", "sensor", "Plant 1", false);
     toSend += addStringLine(getAnalogSensor(33), 2, " points", "sensor", "Plant 2", true);
     toSend += " ]";
-    // String toSend = "[" + forFirst + forSecond + fake + "]";
     request->send(200, "text/plain", toSend);
   });
 
-  server.on("/getSensor/3", HTTP_GET, [](AsyncWebServerRequest *request){
-    String toSend = "{\"value\": " + getTemperature() + "}";
-    request->send(200, "text/plain", toSend);
-  });
-
-  server.on("/getSensor/4", HTTP_GET, [](AsyncWebServerRequest *request){
-    String toSend = "{\"value\": " + getHumidity() + "}";
+  // /getData?id=xx
+  server.on("/getData", HTTP_GET, [](AsyncWebServerRequest *request){
+    String componentID;
+    if(request->hasParam("id")) {
+      componentID = request->getParam("id")->value();
+    }
+    String toSend;
+    if(componentID == "1") {
+      toSend = addStringLine(getAnalogSensor(32), 1, " points", "sensor", "Plant 1", true);
+    }
+    if(componentID == "2") {
+      toSend = addStringLine(getAnalogSensor(33), 2, " points", "sensor", "Plant 2", true);
+    }
+    if(componentID == "3") {
+      toSend = addStringLine(getTemperature(), 3, "C", "sensor", "Temperature", true);
+    }
+    if(componentID == "4") {
+      toSend = addStringLine(getHumidity(), 4, "%", "sensor", "Air Humidity", true);
+    }
     request->send(200, "text/plain", toSend);
   });
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/update/slider", [](AsyncWebServerRequest *request, JsonVariant &json) {
     StaticJsonDocument<100> data;
     char* response;
-    Serial.println("Have request to update");
     if (json.is<JsonArray>())
     {
       data = json.as<JsonArray>();
@@ -104,7 +111,6 @@ void setup() {
     DeserializationError error = deserializeJson(data, response);
     const char* id = data["id"];
     const char* value = data["value"];
-    Serial.println(value);
     request->send(200, "application/json", response);
   });
 
@@ -116,7 +122,6 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 }
 
 String getTemperature() {
@@ -133,6 +138,7 @@ String getAnalogSensor(byte pin) {
   return String(analogRead(pin));
 }
 
+// create JSON element
 String addStringLine(String value, byte id, String symbol, String type, String name, bool last) {
   String lastComma = ", ";
   if (last) lastComma = " ";
