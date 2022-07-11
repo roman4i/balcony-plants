@@ -10,7 +10,7 @@ const SensorItem = ({itemName, itemVal, id}) => {
     useEffect(() => {
         if(doUpdate === true) {
             setCurrentVal('---');
-            fetch('/getSensor/' + id)
+            fetch('/getData?id=' + id)
                 .then(resp => resp.json())
                 .then(result => setCurrentVal(result.value));
             setDoUpdate(false);
