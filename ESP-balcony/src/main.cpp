@@ -67,25 +67,33 @@ void setup() {
   });
 
   server.on("/getAllData", HTTP_GET, [](AsyncWebServerRequest *request){
-    // String forFirst = "{\"id\": \"3\", \"type\": \"sensor\", \"name\": \"Temperature\", \"value\": \"" + getTemperature() +"C\"}, ";
-    // String forSecond = "{\"id\": \"4\", \"type\": \"sensor\", \"name\": \"Humidity\", \"value\": \"" + getHumidity() +"C\"}, ";
-    // String fake = "{\"id\": \"2\", \"type\": \"slider\", \"name\": \"Humidity\", \"value\": \"30\"}";
     String toSend = "[ " + addStringLine(getTemperature(), 3, "C", "sensor", "Temperature", false);
     toSend += addStringLine(getHumidity(), 4, "%", "sensor", "Air Humidity", false);
     toSend += addStringLine(getAnalogSensor(32), 1, " points", "sensor", "Plant 1", false);
     toSend += addStringLine(getAnalogSensor(33), 2, " points", "sensor", "Plant 2", true);
     toSend += " ]";
-    // String toSend = "[" + forFirst + forSecond + fake + "]";
     request->send(200, "text/plain", toSend);
   });
 
-  server.on("/getSensor/3", HTTP_GET, [](AsyncWebServerRequest *request){
-    String toSend = "{\"value\": " + getTemperature() + "}";
-    request->send(200, "text/plain", toSend);
-  });
-
-  server.on("/getSensor/4", HTTP_GET, [](AsyncWebServerRequest *request){
-    String toSend = "{\"value\": " + getHumidity() + "}";
+  // /getData?id=xx
+  server.on("/getData", HTTP_GET, [](AsyncWebServerRequest *request){
+    String componentID;
+    if(request->hasParam("id")) {
+      componentID = request->getParam("id")->value();
+    }
+    String toSend;
+    if(componentID == "1") {
+      toSend = addStringLine(getAnalogSensor(32), 1, " points", "sensor", "Plant 1", true);
+    }
+    if(componentID == "2") {
+      toSend = addStringLine(getAnalogSensor(33), 2, " points", "sensor", "Plant 2", true);
+    }
+    if(componentID == "3") {
+      toSend = addStringLine(getTemperature(), 3, "C", "sensor", "Temperature", true);
+    }
+    if(componentID == "4") {
+      toSend = addStringLine(getHumidity(), 4, "%", "sensor", "Air Humidity", true);
+    }
     request->send(200, "text/plain", toSend);
   });
 
@@ -93,6 +101,10 @@ void setup() {
     StaticJsonDocument<100> data;
     char* response;
     Serial.println("Have request to update");
+    int args = request->args();
+    for(int i=0;i<args;i++){
+      Serial.printf("ARG[%s]: %s\n", request->argName(i).c_str(), request->arg(i).c_str());
+    }
     if (json.is<JsonArray>())
     {
       data = json.as<JsonArray>();
