@@ -7,8 +7,11 @@
 #include "AsyncJson.h"
 #include <ArduinoJson.h>
 
-const char* ssid = "virusInfectedNetwork_2";
-const char* password = "bxd1xfb4G";
+#define pwmFreq 5000
+#define pwmResolution 8
+
+const char* ssid = "network";
+const char* password = "pass";
 
 AsyncWebServer server(80);
 Bme280TwoWire sensor;
@@ -17,6 +20,7 @@ String getTemperature();
 String getHumidity();
 String getAnalogSensor(byte pin);
 String addStringLine(String value, byte id, String symbol, String type, String name, bool last);
+int convertProcents(String procents);
 
 struct dataHolder {
   byte id;
@@ -24,7 +28,8 @@ struct dataHolder {
 };
 
 // just as example
-dataHolder switcher = {5, "false"};
+dataHolder switcher = { 5, "false" };
+dataHolder slider = { 6, "100" };
 
 void notFound(AsyncWebServerRequest *request){
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
@@ -38,10 +43,12 @@ void setup() {
     return;
   }
 
+  // bme280 configuring
   Wire.begin();
   sensor.begin(Bme280TwoWireAddress::Primary);
   sensor.setSettings(Bme280Settings::defaults());
 
+  // wifi configuring
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -49,6 +56,11 @@ void setup() {
   }
 
   Serial.println(WiFi.localIP());
+
+  // pwm configuring
+  ledcSetup(0, pwmFreq, pwmResolution);
+  ledcAttachPin(16, 0);
+  ledcWrite(0, 255);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(LittleFS, "/index.html");
@@ -70,7 +82,8 @@ void setup() {
     String toSend = "[ " + addStringLine(getTemperature(), 3, "C", "sensor", "Temperature", false);
     toSend += addStringLine(getHumidity(), 4, "%", "sensor", "Air Humidity", false);
     toSend += addStringLine(getAnalogSensor(32), 1, " points", "sensor", "Plant 1", false);
-    toSend += addStringLine(getAnalogSensor(33), 2, " points", "sensor", "Plant 2", true);
+    toSend += addStringLine(getAnalogSensor(33), 2, " points", "sensor", "Plant 2", false);
+    toSend += addStringLine(slider.value, 6, "%", "slider", "LED1 PWM", true);
     toSend += " ]";
     request->send(200, "text/plain", toSend);
   });
@@ -98,27 +111,19 @@ void setup() {
   });
 
   AsyncCallbackJsonWebHandler* sliderHandler = new AsyncCallbackJsonWebHandler("/update/slider", [](AsyncWebServerRequest *request, JsonVariant &json) {
-    StaticJsonDocument<100> data;
-    char* response;
-    // if (json.is<JsonArray>())
-    // {
-    //   data = json.as<JsonArray>();
-    // }
-    // else if (json.is<JsonObject>())
-    // {
-    //   data = json.as<JsonObject>();
-    // }
-    data = json.as<JsonObject>();
-    DeserializationError error = deserializeJson(data, response);
-    const char* id = data["id"];
-    const char* value = data["value"];
+    StaticJsonDocument<64> doc;
 
-    Serial.print("Id is ");
-    Serial.println(id);
-    Serial.print("Value is ");
-    Serial.println(value);
+    JsonObject obj = json.as<JsonObject>();
+
+    const char* id = obj["id"];
+    const char* value = obj["value"];
+
+    if(String(id) == "6") {
+      slider.value = String(value);
+      ledcWrite(0, convertProcents(slider.value));
+    }
     
-    request->send(200, "application/json", response);
+    request->send(200);
   });
 
   server.addHandler(sliderHandler);
@@ -141,6 +146,7 @@ String getHumidity() {
   return hum;
 }
 
+// get analog sensor data, return string
 String getAnalogSensor(byte pin) {
   return String(analogRead(pin));
 }
@@ -156,4 +162,11 @@ String addStringLine(String value, byte id, String symbol, String type, String n
     + value + "" 
     + symbol + "\"}" + lastComma;
     return line;
+}
+
+// converts procents to range from 0 to 255
+int convertProcents(String procents) {
+  int output;
+  output = map(procents.toInt(), 0, 100, 0, 255);
+  return output;
 }
