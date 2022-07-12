@@ -97,24 +97,31 @@ void setup() {
     request->send(200, "text/plain", toSend);
   });
 
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/update/slider", [](AsyncWebServerRequest *request, JsonVariant &json) {
+  AsyncCallbackJsonWebHandler* sliderHandler = new AsyncCallbackJsonWebHandler("/update/slider", [](AsyncWebServerRequest *request, JsonVariant &json) {
     StaticJsonDocument<100> data;
     char* response;
-    if (json.is<JsonArray>())
-    {
-      data = json.as<JsonArray>();
-    }
-    else if (json.is<JsonObject>())
-    {
-      data = json.as<JsonObject>();
-    }
+    // if (json.is<JsonArray>())
+    // {
+    //   data = json.as<JsonArray>();
+    // }
+    // else if (json.is<JsonObject>())
+    // {
+    //   data = json.as<JsonObject>();
+    // }
+    data = json.as<JsonObject>();
     DeserializationError error = deserializeJson(data, response);
     const char* id = data["id"];
     const char* value = data["value"];
+
+    Serial.print("Id is ");
+    Serial.println(id);
+    Serial.print("Value is ");
+    Serial.println(value);
+    
     request->send(200, "application/json", response);
   });
 
-  server.addHandler(handler);
+  server.addHandler(sliderHandler);
 
   server.onNotFound(notFound);
 
