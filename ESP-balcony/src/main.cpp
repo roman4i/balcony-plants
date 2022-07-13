@@ -62,12 +62,28 @@ void setup() {
   ledcAttachPin(16, 0);
   ledcWrite(0, 255);
 
+  // digital output configuring
+  pinMode(17, OUTPUT);
+  if(switcher.value == "false") {
+    digitalWrite(17, LOW);
+  } else {
+    digitalWrite(17, HIGH);
+  }
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(LittleFS, "/index.html");
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(LittleFS, "/favicon.ico");
+  });
+
+  server.on("/logo192.png", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(LittleFS, "/logo192.png");
+  });
+
+  server.on("/logo512.png", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(LittleFS, "/logo512.png");
   });
 
   server.on("/static/js/main.js", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -83,7 +99,8 @@ void setup() {
     toSend += addStringLine(getHumidity(), 4, "%", "sensor", "Air Humidity", false);
     toSend += addStringLine(getAnalogSensor(32), 1, " points", "sensor", "Plant 1", false);
     toSend += addStringLine(getAnalogSensor(33), 2, " points", "sensor", "Plant 2", false);
-    toSend += addStringLine(slider.value, 6, "%", "slider", "LED1 PWM", true);
+    toSend += addStringLine(slider.value, slider.id, "", "slider", "LED1 PWM", false);
+    toSend += addStringLine(switcher.value, switcher.id, "", "digital", "Led 2", true);
     toSend += " ]";
     request->send(200, "text/plain", toSend);
   });
@@ -126,7 +143,28 @@ void setup() {
     request->send(200);
   });
 
+  AsyncCallbackJsonWebHandler* switchHandler = new AsyncCallbackJsonWebHandler("/update/switch", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    StaticJsonDocument<100> doc;
+
+    JsonObject obj = json.as<JsonObject>();
+
+    const char* id = obj["id"];
+    const char* value = obj["value"];
+
+    if(String(id) == "5") {
+      switcher.value = String(value);
+      if(switcher.value == "false") {
+        digitalWrite(17, LOW);
+      } else {
+        digitalWrite(17, HIGH);
+      }
+    }
+
+    request->send(200);
+  });
+
   server.addHandler(sliderHandler);
+  server.addHandler(switchHandler);
 
   server.onNotFound(notFound);
 
