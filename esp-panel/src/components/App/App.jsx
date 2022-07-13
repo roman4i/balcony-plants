@@ -4,10 +4,11 @@ import Title from "../Title";
 
 import './style.css';
 
-// const dataList = [
+// uncomment this and put to dataList for test
+// const staticDataList = [
 //   {type: 'sensor', name: 'Temperature', value: '20C'},
-//   {type: 'digital', name: 'Ventilation', value: true},
-//   {type: 'slider', name: 'Light', value: 70},
+//   {type: 'digital', name: 'Ventilation', value: "false"},
+//   {type: 'slider', name: 'Light', value: "70"},
 // ];
 
 function App() {

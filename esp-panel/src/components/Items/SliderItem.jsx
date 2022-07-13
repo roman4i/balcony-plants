@@ -26,8 +26,13 @@ const SliderItem = ({ itemName, itemVal, id }) => {
 
     return(
         <div className='itemUsual'>
-            <div>{itemName} {val}</div>
-            <input type="range" min={0} max={100} value={val} onChange={changeSlider} onMouseUp={sendRangeData} />
+            <div>{itemName} {val}%</div>
+            <input type="range" 
+                min={0} max={100}  
+                value={val} 
+                onChange={changeSlider} onMouseUp={sendRangeData}
+                onTouchMove={changeSlider} onTouchEnd={sendRangeData}
+            />
         </div>
     )
 }

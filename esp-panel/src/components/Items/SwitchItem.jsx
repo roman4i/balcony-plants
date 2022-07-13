@@ -4,7 +4,7 @@ import { useState } from 'react';
 import "./items-style.css";
 
 const SwitchItem = ({ itemName, itemVal, id }) => {
-    const [checked, setCheked] = useState(itemVal);
+    const [checked, setCheked] = useState(itemVal === "true" ? true : false);
 
     const revertCheckbox = () => {
         fetch('/update/switch', {
@@ -12,10 +12,10 @@ const SwitchItem = ({ itemName, itemVal, id }) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: {
+            body: JSON.stringify({
                 id: id,
-                value: checked
-            }
+                value: (!checked).toString()
+            })
         })
             .then(result => {if(result.ok) setCheked(old => !old)})
             .catch(err => {console.log('Failed to send switch data')})
